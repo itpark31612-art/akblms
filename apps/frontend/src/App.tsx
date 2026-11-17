@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { ToastProvider } from './design-system/components/Toast';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginPage } from './pages/auth/LoginPage';
@@ -18,31 +20,35 @@ import { NotFoundPage } from './pages/NotFoundPage';
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          {/* Ochiq yo'nalishlar */}
-          <Route path="/login" element={<LoginPage />} />
+      <ThemeProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <Routes>
+              {/* Ochiq yo'nalishlar */}
+              <Route path="/login" element={<LoginPage />} />
 
-          {/* Himoyalangan asosiy yo'nalishlar */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<AppLayout />}>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/users" element={<UsersPage />} />
-              <Route path="/courses" element={<CoursesPage />} />
-              <Route path="/analytics" element={<AnalyticsPage />} />
-              <Route path="/schedule" element={<SchedulePage />} />
-              <Route path="/grades" element={<GradesPage />} />
-              <Route path="/payments" element={<PaymentsPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/forbidden" element={<ForbiddenPage />} />
-            </Route>
-          </Route>
+              {/* Himoyalangan asosiy yo'nalishlar */}
+              <Route element={<ProtectedRoute />}>
+                <Route element={<AppLayout />}>
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/users" element={<UsersPage />} />
+                  <Route path="/courses" element={<CoursesPage />} />
+                  <Route path="/analytics" element={<AnalyticsPage />} />
+                  <Route path="/schedule" element={<SchedulePage />} />
+                  <Route path="/grades" element={<GradesPage />} />
+                  <Route path="/payments" element={<PaymentsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/forbidden" element={<ForbiddenPage />} />
+                </Route>
+              </Route>
 
-          {/* 404 Not Found */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </AuthProvider>
+              {/* 404 Not Found */}
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </AuthProvider>
+        </ToastProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 };

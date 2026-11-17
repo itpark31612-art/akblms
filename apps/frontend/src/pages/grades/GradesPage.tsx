@@ -1,9 +1,14 @@
 import React from 'react';
-import { Card } from '../../components/common/Card';
-import { Button } from '../../components/common/Button';
+import { Card } from '../../design-system/components/Card';
+import { Button } from '../../design-system/components/Button';
+import { Badge } from '../../design-system/components/Badge';
+import { useToast } from '../../design-system/components/Toast';
+import { PageTransition } from '../../design-system/motion/PageTransition';
 import { Download } from 'lucide-react';
 
 export const GradesPage: React.FC = () => {
+  const toast = useToast();
+
   const gradeItems = [
     {
       subject: 'Dasturlash Asoslari & Algoritmlar',
@@ -44,13 +49,13 @@ export const GradesPage: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <PageTransition className="space-y-6 text-left">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
             Akademik Baholar Daftari
           </h2>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Joriy semestrdagi barcha fanlar oraliq, yakuniy va jami ballari
           </p>
         </div>
@@ -58,7 +63,7 @@ export const GradesPage: React.FC = () => {
           variant="outline"
           size="sm"
           icon={<Download className="w-4 h-4" />}
-          onClick={() => alert('Baholar vedomosti (Transcript) yuklab olindi')}
+          onClick={() => toast.success('Yuklab olindi', 'Baholar vedomosti (Transkript) saqlandi')}
         >
           Transkript Yuklab Olish
         </Button>
@@ -66,9 +71,9 @@ export const GradesPage: React.FC = () => {
 
       <Card className="p-0 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase font-semibold">
+              <tr className="bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-semibold">
                 <th className="py-3 px-4">Fan Nomi</th>
                 <th className="py-3 px-4">O‘qituvchi</th>
                 <th className="py-3 px-4">Oraliq Nazorat</th>
@@ -78,19 +83,26 @@ export const GradesPage: React.FC = () => {
                 <th className="py-3 px-4 text-center">Harfiy Baho</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
               {gradeItems.map((item, idx) => (
-                <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3.5 px-4 font-bold text-slate-900">{item.subject}</td>
-                  <td className="py-3.5 px-4 text-slate-500">{item.teacher}</td>
+                <tr
+                  key={idx}
+                  className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                >
+                  <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-slate-100">
+                    {item.subject}
+                  </td>
+                  <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400">{item.teacher}</td>
                   <td className="py-3.5 px-4 font-mono">{item.midterm} / 100</td>
                   <td className="py-3.5 px-4 font-mono">{item.homework} / 100</td>
                   <td className="py-3.5 px-4 font-mono">{item.final} / 100</td>
-                  <td className="py-3.5 px-4 font-bold text-indigo-600">{item.total} ball</td>
+                  <td className="py-3.5 px-4 font-extrabold text-indigo-600 dark:text-indigo-400">
+                    {item.total} ball
+                  </td>
                   <td className="py-3.5 px-4 text-center">
-                    <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    <Badge variant={item.grade.startsWith('A') ? 'success' : 'purple'}>
                       {item.grade}
-                    </span>
+                    </Badge>
                   </td>
                 </tr>
               ))}
@@ -98,6 +110,6 @@ export const GradesPage: React.FC = () => {
           </table>
         </div>
       </Card>
-    </div>
+    </PageTransition>
   );
 };

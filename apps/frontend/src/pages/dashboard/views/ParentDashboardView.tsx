@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { StatsCard } from '../../../components/common/StatsCard';
-import { Card } from '../../../components/common/Card';
-import { Button } from '../../../components/common/Button';
-import { Modal } from '../../../components/common/Modal';
+import { Card } from '../../../design-system/components/Card';
+import { Button } from '../../../design-system/components/Button';
+import { Modal } from '../../../design-system/components/Modal';
+import { Badge } from '../../../design-system/components/Badge';
+import { useToast } from '../../../design-system/components/Toast';
+import { PageTransition } from '../../../design-system/motion/PageTransition';
+import { CounterAnimation } from '../../../design-system/motion/CounterAnimation';
+import { StaggerContainer, StaggerItem } from '../../../design-system/motion/StaggerAnimation';
 import {
   Users,
   CalendarCheck,
@@ -14,6 +18,7 @@ import {
 } from 'lucide-react';
 
 export const ParentDashboardView: React.FC = () => {
+  const toast = useToast();
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
   const [selectedChild, setSelectedChild] = useState('Alisher Sobirov');
   const [messageText, setMessageText] = useState('');
@@ -42,20 +47,20 @@ export const ParentDashboardView: React.FC = () => {
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageText.trim()) return;
-    alert(`Xabar o‘qituvchiga muvaffaqiyatli yuborildi: "${messageText}"`);
+    toast.success('Xabar yuborildi', `${selectedChild} ning sinf rahbariga xabaringiz yetkazildi`);
     setMessageText('');
     setIsMessageModalOpen(false);
   };
 
   return (
-    <div className="space-y-6">
+    <PageTransition className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-left">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
             Ota-ona Monitoring Xonasi
           </h2>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Farzandlaringiz ta’lim samaradorligi, davomati va to‘lovlar nazorati
           </p>
         </div>
@@ -71,75 +76,132 @@ export const ParentDashboardView: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <StatsCard
-          title="Farzandlar Soni"
-          value={children.length}
-          icon={<Users className="w-5 h-5" />}
-          subtitle="EMS tizimida ro‘yxatda"
-          color="indigo"
-        />
-        <StatsCard
-          title="Umumiy Davomat"
-          value="96.6%"
-          icon={<CalendarCheck className="w-5 h-5" />}
-          trend={{ value: 'A’lo darajada', isPositive: true }}
-          color="emerald"
-        />
-        <StatsCard
-          title="O‘rtacha Akademik GPA"
-          value="3.78"
-          icon={<Award className="w-5 h-5" />}
-          subtitle="4.0 maksimal shkala"
-          color="purple"
-        />
-        <StatsCard
-          title="Oylik To‘lov Holati"
-          value="To‘langan"
-          icon={<CreditCard className="w-5 h-5" />}
-          subtitle="Noyabr 2026 uchun to‘liq"
-          color="blue"
-        />
-      </div>
+      {/* Stats with CounterAnimation */}
+      <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <StaggerItem>
+          <Card hover accent="indigo" className="h-full flex flex-col justify-between">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Farzandlarim
+                </p>
+                <h3 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 mt-1">
+                  <CounterAnimation value={children.length} suffix=" nafar" />
+                </h3>
+              </div>
+              <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400">
+                <Users className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
+              EMS tizimida ro‘yxatda
+            </div>
+          </Card>
+        </StaggerItem>
+
+        <StaggerItem>
+          <Card hover accent="emerald" className="h-full flex flex-col justify-between">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Umumiy Davomat
+                </p>
+                <h3 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 mt-1">
+                  <CounterAnimation value={96.6} decimals={1} suffix="%" />
+                </h3>
+              </div>
+              <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400">
+                <CalendarCheck className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+              A’lo darajada
+            </div>
+          </Card>
+        </StaggerItem>
+
+        <StaggerItem>
+          <Card hover accent="purple" className="h-full flex flex-col justify-between">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  O‘rtacha GPA
+                </p>
+                <h3 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 mt-1">
+                  <CounterAnimation value={3.78} decimals={2} />
+                </h3>
+              </div>
+              <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/80 text-purple-600 dark:text-purple-400">
+                <Award className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
+              4.0 maksimal shkala
+            </div>
+          </Card>
+        </StaggerItem>
+
+        <StaggerItem>
+          <Card hover accent="indigo" className="h-full flex flex-col justify-between">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Oylik To‘lov
+                </p>
+                <h3 className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1.5">
+                  To‘langan
+                </h3>
+              </div>
+              <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400">
+                <CreditCard className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
+              Noyabr 2026 uchun
+            </div>
+          </Card>
+        </StaggerItem>
+      </StaggerContainer>
 
       {/* Children Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {children.map((c) => (
-          <Card key={c.id} className="relative overflow-hidden">
-            <div className="flex items-start justify-between pb-4 border-b border-slate-100">
+          <Card key={c.id} className="relative overflow-hidden text-left">
+            <div className="flex items-start justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <h3 className="text-base font-bold text-slate-900">{c.name}</h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">{c.name}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   {c.grade} • {c.school}
                 </p>
               </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-                GPA: {c.gpa}
-              </span>
+              <Badge variant="purple">GPA: {c.gpa}</Badge>
             </div>
 
             <div className="grid grid-cols-2 gap-4 py-4 text-xs">
               <div>
                 <span className="text-slate-400 block text-[11px]">Davomat:</span>
-                <span className="font-bold text-emerald-600 mt-0.5 block">{c.attendance}</span>
+                <span className="font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
+                  {c.attendance}
+                </span>
               </div>
               <div>
                 <span className="text-slate-400 block text-[11px]">So‘nggi Baho:</span>
-                <span className="font-bold text-indigo-600 mt-0.5 block">{c.lastGrade}</span>
+                <span className="font-extrabold text-indigo-600 dark:text-indigo-400 mt-0.5 block">
+                  {c.lastGrade}
+                </span>
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-[11px] text-slate-400 flex items-center gap-1">
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
                 <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
-                Darslarda qatnashmoqda
+                Darslarda to‘liq ishtirok etmoqda
               </span>
               <Button
                 variant="ghost"
                 size="sm"
                 icon={<PhoneCall className="w-3.5 h-3.5" />}
-                onClick={() => alert(`Sinf rahbari telefoni: +998 71 200 11 22 (${c.name})`)}
+                onClick={() => toast.info('Sinf Rahbari', `Aloqa: +998 71 200 11 22 (${c.name})`)}
               >
                 Sinf Rahbari
               </Button>
@@ -157,13 +219,13 @@ export const ParentDashboardView: React.FC = () => {
       >
         <form onSubmit={handleSendMessage} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
               Farzandni Tanlang
             </label>
             <select
               value={selectedChild}
               onChange={(e) => setSelectedChild(e.target.value)}
-              className="w-full text-sm border border-slate-300 rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
+              className="w-full text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950 focus:border-indigo-500"
             >
               {children.map((c) => (
                 <option key={c.id} value={c.name}>
@@ -173,17 +235,19 @@ export const ParentDashboardView: React.FC = () => {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Xabar Matni</label>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+              Xabar Matni
+            </label>
             <textarea
               rows={4}
               placeholder="Assalomu alaykum, farzandimning dars jarayonlari haqida..."
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
-              className="w-full text-sm border border-slate-300 rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
+              className="w-full text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950 focus:border-indigo-500"
               required
             />
           </div>
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <Button
               type="button"
               variant="outline"
@@ -198,6 +262,6 @@ export const ParentDashboardView: React.FC = () => {
           </div>
         </form>
       </Modal>
-    </div>
+    </PageTransition>
   );
 };

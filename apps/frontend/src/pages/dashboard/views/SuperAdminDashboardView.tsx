@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { StatsCard } from '../../../components/common/StatsCard';
-import { Card } from '../../../components/common/Card';
-import { Button } from '../../../components/common/Button';
-import { Modal } from '../../../components/common/Modal';
+import { Card } from '../../../design-system/components/Card';
+import { Button } from '../../../design-system/components/Button';
+import { Modal } from '../../../design-system/components/Modal';
+import { Badge } from '../../../design-system/components/Badge';
+import { useToast } from '../../../design-system/components/Toast';
+import { PageTransition } from '../../../design-system/motion/PageTransition';
+import { CounterAnimation } from '../../../design-system/motion/CounterAnimation';
+import { StaggerContainer, StaggerItem } from '../../../design-system/motion/StaggerAnimation';
 import {
   Users,
   GraduationCap,
@@ -11,7 +15,7 @@ import {
   Plus,
   RefreshCw,
   Download,
-  CheckCircle,
+  TrendingUp,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -26,6 +30,7 @@ import {
 } from '../../../components/common/Charts';
 
 export const SuperAdminDashboardView: React.FC = () => {
+  const toast = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newSchoolName, setNewSchoolName] = useState('');
   const [schools, setSchools] = useState([
@@ -78,29 +83,27 @@ export const SuperAdminDashboardView: React.FC = () => {
     setSchools([...schools, newSchool]);
     setNewSchoolName('');
     setIsModalOpen(false);
+    toast.success('Muvaffaqiyatli', `${newSchool.name} tizimga qo‘shildi`);
   };
 
   const handleRefresh = () => {
     setIsRefreshing(true);
     setTimeout(() => {
       setIsRefreshing(false);
-    }, 600);
-  };
-
-  const handleExportReport = () => {
-    alert('Tizim hisoboti (PDF / CSV) muvaffaqiyatli shakllantirildi va yuklab olindi.');
+      toast.info('Yangilandi', 'Barcha ko‘rsatkichlar real vaqt rejimida yangilandi');
+    }, 500);
   };
 
   return (
-    <div className="space-y-6">
+    <PageTransition className="space-y-6">
       {/* Top Banner & Quick Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-left">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
             Super Admin Boshqaruv Markazi
           </h2>
-          <p className="text-sm text-slate-500 mt-1">
-            EMS ta’lim tarmog‘ining global infratuzilmasi va resurslari nazorati
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Global ta’lim infratuzilmasi, tarmoq resurslari va server monitoringi
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -116,7 +119,7 @@ export const SuperAdminDashboardView: React.FC = () => {
             variant="outline"
             size="sm"
             icon={<Download className="w-4 h-4" />}
-            onClick={handleExportReport}
+            onClick={() => toast.success('Eksport qilindi', 'Hisobot yuklab olindi')}
           >
             Eksport
           </Button>
@@ -126,62 +129,119 @@ export const SuperAdminDashboardView: React.FC = () => {
             icon={<Plus className="w-4 h-4" />}
             onClick={() => setIsModalOpen(true)}
           >
-            Yangi Filial / Maktab
+            Yangi Filial
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <StatsCard
-          title="Jami Foydalanuvchilar"
-          value="2,450"
-          icon={<Users className="w-5 h-5" />}
-          trend={{ value: '+14% o‘sish', isPositive: true }}
-          color="indigo"
-        />
-        <StatsCard
-          title="Faol O‘quvchilar"
-          value="1,950"
-          icon={<GraduationCap className="w-5 h-5" />}
-          trend={{ value: '+18% yangi', isPositive: true }}
-          color="emerald"
-        />
-        <StatsCard
-          title="Ta’lim Muassasalari"
-          value={schools.length}
-          icon={<Building2 className="w-5 h-5" />}
-          subtitle="Barcha filiallar faol"
-          color="purple"
-        />
-        <StatsCard
-          title="Server Ishonchliligi"
-          value="99.99%"
-          icon={<Server className="w-5 h-5" />}
-          subtitle="Latency: 24ms (Optimal)"
-          color="blue"
-        />
-      </div>
+      {/* Stats Cards with CounterAnimation and Stagger */}
+      <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <StaggerItem>
+          <Card hover accent="indigo" className="h-full flex flex-col justify-between">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Jami Foydalanuvchilar
+                </p>
+                <h3 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 mt-1">
+                  <CounterAnimation value={2450} />
+                </h3>
+              </div>
+              <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400">
+                <Users className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+              <TrendingUp className="w-3.5 h-3.5 mr-1" />
+              <span>+14% bu oyda</span>
+            </div>
+          </Card>
+        </StaggerItem>
+
+        <StaggerItem>
+          <Card hover accent="emerald" className="h-full flex flex-col justify-between">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Faol O‘quvchilar
+                </p>
+                <h3 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 mt-1">
+                  <CounterAnimation value={1950} />
+                </h3>
+              </div>
+              <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400">
+                <GraduationCap className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+              <TrendingUp className="w-3.5 h-3.5 mr-1" />
+              <span>+18% yangi qabul</span>
+            </div>
+          </Card>
+        </StaggerItem>
+
+        <StaggerItem>
+          <Card hover accent="purple" className="h-full flex flex-col justify-between">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Ta’lim Muassasalari
+                </p>
+                <h3 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 mt-1">
+                  <CounterAnimation value={schools.length} />
+                </h3>
+              </div>
+              <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/80 text-purple-600 dark:text-purple-400">
+                <Building2 className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
+              100% faol filiallar
+            </div>
+          </Card>
+        </StaggerItem>
+
+        <StaggerItem>
+          <Card hover accent="indigo" className="h-full flex flex-col justify-between">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Server Ishonchliligi
+                </p>
+                <h3 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 mt-1">
+                  <CounterAnimation value={99.99} decimals={2} suffix="%" />
+                </h3>
+              </div>
+              <div className="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400">
+                <Server className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
+              Latency: 22ms (Optimal)
+            </div>
+          </Card>
+        </StaggerItem>
+      </StaggerContainer>
 
       {/* Analytics Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Growth Area Chart */}
         <Card className="lg:col-span-8 flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-base font-semibold text-slate-900">
+              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
                 Platforma O‘sish Dinamikasi
               </h3>
-              <p className="text-xs text-slate-500">
-                Oylar kesimida talabalar va o‘qituvchilar soni
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Oylar kesimida talabalar va pedagoglar soni
               </p>
             </div>
             <div className="flex items-center gap-3 text-xs">
-              <span className="flex items-center gap-1.5 text-indigo-600 font-medium">
-                <span className="w-3 h-3 rounded-full bg-indigo-600"></span> O‘quvchilar
+              <span className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 font-semibold">
+                <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 dark:bg-indigo-400" />{' '}
+                O‘quvchilar
               </span>
-              <span className="flex items-center gap-1.5 text-emerald-600 font-medium">
-                <span className="w-3 h-3 rounded-full bg-emerald-500"></span> O‘qituvchilar
+              <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> O‘qituvchilar
               </span>
             </div>
           </div>
@@ -198,7 +258,12 @@ export const SuperAdminDashboardView: React.FC = () => {
                     <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#334155"
+                  opacity={0.2}
+                />
                 <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} tickLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
                 <Tooltip />
@@ -223,73 +288,83 @@ export const SuperAdminDashboardView: React.FC = () => {
           </div>
         </Card>
 
-        {/* Server Health Bar Chart */}
         <Card className="lg:col-span-4 flex flex-col justify-between">
           <div className="mb-4">
-            <h3 className="text-base font-semibold text-slate-900">Server Yuklamasi (%)</h3>
-            <p className="text-xs text-slate-500">So‘nggi 24 soatlik CPU va Xotira</p>
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+              Server Yuklamasi (%)
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              So‘nggi 24 soatlik CPU va Xotira
+            </p>
           </div>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={serverLoadData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#334155"
+                  opacity={0.2}
+                />
                 <XAxis dataKey="time" stroke="#94a3b8" fontSize={11} tickLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
                 <Tooltip />
-                <Bar dataKey="cpu" fill="#6366f1" radius={[4, 4, 0, 0]} name="CPU Yuklamasi" />
-                <Bar dataKey="memory" fill="#cbd5e1" radius={[4, 4, 0, 0]} name="Xotira (RAM)" />
+                <Bar dataKey="cpu" fill="#6366f1" radius={[4, 4, 0, 0]} name="CPU (%)" />
+                <Bar dataKey="memory" fill="#94a3b8" radius={[4, 4, 0, 0]} name="RAM (%)" />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </Card>
       </div>
 
-      {/* Schools / Branches List */}
+      {/* Schools List */}
       <Card>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-base font-semibold text-slate-900">
-              Tizimdagi Ta’lim Muassasalari
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+              Ta’lim Muassasalari Ro‘yxati
             </h3>
-            <p className="text-xs text-slate-500">
-              Ushbu platformaga ulangan maktablar va filiallar
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Ulangan maktablar va ularning faol o‘quvchilar soni
             </p>
           </div>
-          <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
-            {schools.length} ta filial faol
-          </span>
+          <Badge variant="purple">{schools.length} ta faol filial</Badge>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-400 uppercase font-semibold">
+              <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-semibold">
                 <th className="py-3 px-4">Muassasa Nomi</th>
                 <th className="py-3 px-4">Kodi</th>
-                <th className="py-3 px-4">O‘quvchilar Soni</th>
-                <th className="py-3 px-4">Holati</th>
+                <th className="py-3 px-4">O‘quvchilar</th>
+                <th className="py-3 px-4">Holat</th>
                 <th className="py-3 px-4 text-right">Amallar</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 text-slate-700 dark:text-slate-300">
               {schools.map((s) => (
-                <tr key={s.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3.5 px-4 font-semibold text-slate-900 flex items-center gap-2">
+                <tr
+                  key={s.id}
+                  className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                >
+                  <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                     <Building2 className="w-4 h-4 text-slate-400" />
                     {s.name}
                   </td>
-                  <td className="py-3.5 px-4 font-mono text-slate-500">{s.code}</td>
-                  <td className="py-3.5 px-4">{s.students} nafar</td>
+                  <td className="py-3.5 px-4 font-mono text-slate-500 dark:text-slate-400">
+                    {s.code}
+                  </td>
+                  <td className="py-3.5 px-4 font-semibold">{s.students} nafar</td>
                   <td className="py-3.5 px-4">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-medium">
-                      <CheckCircle className="w-3 h-3 text-emerald-600" />
+                    <Badge variant="success" dot>
                       {s.status}
-                    </span>
+                    </Badge>
                   </td>
                   <td className="py-3.5 px-4 text-right">
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => alert(`${s.name} sozlamalari ko‘rib chiqildi.`)}
+                      onClick={() => toast.info('Boshqaruv', `${s.name} profili ochildi`)}
                     >
                       Boshqarish
                     </Button>
@@ -305,24 +380,24 @@ export const SuperAdminDashboardView: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Yangi Maktab / Filial Qo‘shish"
-        description="EMS tarmog‘iga yangi ta’lim binosini ro‘yxatdan o‘tkazing"
+        title="Yangi Filial / Maktab Qo‘shish"
+        description="EMS ta’lim tarmog‘iga yangi muassasa biriktirish"
       >
         <form onSubmit={handleAddSchool} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
               Muassasa To‘liq Nomi
             </label>
             <input
               type="text"
-              placeholder="Masalan: Farg‘ona Prezident Maktabi Filiali"
+              placeholder="Masalan: Farg‘ona IT-Akademiyasi"
               value={newSchoolName}
               onChange={(e) => setNewSchoolName(e.target.value)}
-              className="w-full text-sm border border-slate-300 rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
+              className="w-full text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950 focus:border-indigo-500"
               required
             />
           </div>
-          <div className="flex justify-end gap-2 pt-3">
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
             <Button type="button" variant="outline" size="sm" onClick={() => setIsModalOpen(false)}>
               Bekor qilish
             </Button>
@@ -332,6 +407,6 @@ export const SuperAdminDashboardView: React.FC = () => {
           </div>
         </form>
       </Modal>
-    </div>
+    </PageTransition>
   );
 };

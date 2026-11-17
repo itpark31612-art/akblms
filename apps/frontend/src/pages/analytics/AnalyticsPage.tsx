@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Card } from '../../components/common/Card';
-import { Button } from '../../components/common/Button';
+import { Card } from '../../design-system/components/Card';
+import { Button } from '../../design-system/components/Button';
+import { useToast } from '../../design-system/components/Toast';
+import { PageTransition } from '../../design-system/motion/PageTransition';
 import {
   AreaChart,
   Area,
@@ -18,6 +20,7 @@ import {
 import { Download, RefreshCw } from 'lucide-react';
 
 export const AnalyticsPage: React.FC = () => {
+  const toast = useToast();
   const [period, setPeriod] = useState('OYLIK');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -45,28 +48,33 @@ export const AnalyticsPage: React.FC = () => {
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    setTimeout(() => setIsRefreshing(false), 500);
+    setTimeout(() => {
+      setIsRefreshing(false);
+      toast.info('Yangilandi', 'Grafiklar so‘nggi ma’lumotlar bilan sinxronlashtirildi');
+    }, 500);
   };
 
   return (
-    <div className="space-y-6">
+    <PageTransition className="space-y-6 text-left">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
             Akademik Analitika & Hisobotlar
           </h2>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Recharts interaktiv vizualizatsiyasi: Davomat, o‘zlashtirish va yo‘nalishlar balansi
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 text-xs">
+          <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex items-center gap-1 text-xs">
             {['HAFTALIK', 'OYLIK', 'SEMESTR'].map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
                 className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-                  period === p ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-600'
+                  period === p
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400'
                 }`}
               >
                 {p}
@@ -85,7 +93,9 @@ export const AnalyticsPage: React.FC = () => {
             variant="primary"
             size="sm"
             icon={<Download className="w-4 h-4" />}
-            onClick={() => alert('Analitika hisoboti PDF formatida yuklab olindi')}
+            onClick={() =>
+              toast.success('Yuklab olindi', 'Analitika hisoboti PDF formatida saqlandi')
+            }
           >
             Eksport
           </Button>
@@ -97,10 +107,12 @@ export const AnalyticsPage: React.FC = () => {
         {/* Attendance Area */}
         <Card className="lg:col-span-8">
           <div className="mb-4">
-            <h3 className="text-base font-semibold text-slate-900">
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
               Davomat Barqarorligi Dinamikasi (%)
             </h3>
-            <p className="text-xs text-slate-500">Talabalarning darslarga qatnashish foizi</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Talabalarning darslarga qatnashish foizi
+            </p>
           </div>
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -114,7 +126,12 @@ export const AnalyticsPage: React.FC = () => {
                     <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#334155"
+                  opacity={0.2}
+                />
                 <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} domain={[80, 100]} />
                 <Tooltip />
@@ -135,8 +152,12 @@ export const AnalyticsPage: React.FC = () => {
         {/* Courses Pie */}
         <Card className="lg:col-span-4 flex flex-col justify-between">
           <div className="mb-2">
-            <h3 className="text-base font-semibold text-slate-900">Yo‘nalishlar Ulushi</h3>
-            <p className="text-xs text-slate-500">Akademik dasturlarning mutanosibligi</p>
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+              Yo‘nalishlar Ulushi
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Akademik dasturlarning mutanosibligi
+            </p>
           </div>
           <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -159,14 +180,11 @@ export const AnalyticsPage: React.FC = () => {
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-xs pt-3 border-t border-slate-100">
+          <div className="grid grid-cols-2 gap-2 text-xs pt-3 border-t border-slate-100 dark:border-slate-800">
             {distributionPie.map((d) => (
               <div key={d.name} className="flex items-center gap-1.5">
-                <span
-                  className="w-2.5 h-2.5 rounded-full"
-                  style={{ backgroundColor: d.color }}
-                ></span>
-                <span className="text-slate-600 truncate">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
+                <span className="text-slate-600 dark:text-slate-300 truncate">
                   {d.name} ({d.value}%)
                 </span>
               </div>
@@ -178,15 +196,22 @@ export const AnalyticsPage: React.FC = () => {
       {/* Grade Breakdown by Subjects */}
       <Card>
         <div className="mb-4">
-          <h3 className="text-base font-semibold text-slate-900">
+          <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
             Fanlar Kesimida O‘rtacha Akademik Ko‘rsatkich
           </h3>
-          <p className="text-xs text-slate-500">Maksimal 100 ball shkalasi bo‘yicha</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Maksimal 100 ball shkalasi bo‘yicha
+          </p>
         </div>
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={gradeBreakdown} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="#334155"
+                opacity={0.2}
+              />
               <XAxis dataKey="subject" stroke="#94a3b8" fontSize={11} tickLine={false} />
               <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} domain={[0, 100]} />
               <Tooltip />
@@ -195,6 +220,6 @@ export const AnalyticsPage: React.FC = () => {
           </ResponsiveContainer>
         </div>
       </Card>
-    </div>
+    </PageTransition>
   );
 };

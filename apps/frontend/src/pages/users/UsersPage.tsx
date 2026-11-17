@@ -1,19 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from '../../components/common/Card';
-import { Button } from '../../components/common/Button';
-import { Badge } from '../../components/common/Badge';
-import { Modal } from '../../components/common/Modal';
+import { Card } from '../../design-system/components/Card';
+import { Button } from '../../design-system/components/Button';
+import { Input } from '../../design-system/components/Input';
+import { Select } from '../../design-system/components/Select';
+import { Badge } from '../../design-system/components/Badge';
+import { Modal } from '../../design-system/components/Modal';
+import { Table, Column } from '../../design-system/components/Table';
+import { Pagination } from '../../design-system/components/Pagination';
+import { useToast } from '../../design-system/components/Toast';
+import { PageTransition } from '../../design-system/motion/PageTransition';
 import { usersApi } from '../../api/users.api';
 import { UserRole, UserSummary, ROLE_LABELS, ICreateUserDto } from '@ems/shared';
 import { UserPlus, Search, Trash2, Filter } from 'lucide-react';
 
 export const UsersPage: React.FC = () => {
+  const toast = useToast();
   const [users, setUsers] = useState<UserSummary[]>([]);
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const pageSize = 5;
 
-  // Form holati
   const [formData, setFormData] = useState<ICreateUserDto>({
     email: '',
     password: '',
@@ -23,7 +31,6 @@ export const UsersPage: React.FC = () => {
     phone: '',
   });
 
-  // Boshlang'ich yoki mock foydalanuvchilar
   const initialUsers: UserSummary[] = [
     {
       id: '1',
@@ -96,7 +103,7 @@ export const UsersPage: React.FC = () => {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.email || !formData.firstName || !formData.lastName || !formData.password) {
-      alert('Iltimos, barcha majburiy maydonlarni to‘ldiring');
+      toast.error('Xatolik', 'Iltimos, barcha majburiy maydonlarni to‘ldiring');
       return;
     }
 
@@ -104,7 +111,6 @@ export const UsersPage: React.FC = () => {
       const created = await usersApi.createUser(formData);
       setUsers([created, ...users]);
     } catch {
-      // Offline fallback
       const mockCreated: UserSummary = {
         id: String(Date.now()),
         email: formData.email,
@@ -118,6 +124,7 @@ export const UsersPage: React.FC = () => {
       setUsers([mockCreated, ...users]);
     }
 
+    toast.success('Yaratildi', `${formData.firstName} ${formData.lastName} tizimga qo‘shildi`);
     setIsModalOpen(false);
     setFormData({
       email: '',
@@ -133,10 +140,9 @@ export const UsersPage: React.FC = () => {
     if (!confirm(`${name} nomli foydalanuvchini o‘chirishni tasdiqlaysizmi?`)) return;
     try {
       await usersApi.deleteUser(id);
-    } catch {
-      // offline fallback
-    }
+    } catch {}
     setUsers(users.filter((u) => u.id !== id));
+    toast.info('O‘chirildi', `${name} hisobi muvaffaqiyatli o‘chirildi`);
   };
 
   const filteredUsers = users.filter((u) => {
@@ -148,15 +154,84 @@ export const UsersPage: React.FC = () => {
     return matchesRole && matchesSearch;
   });
 
+  const paginatedUsers = filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const columns: Column<UserSummary & Record<string, unknown>>[] = [
+    {
+      key: 'name',
+      header: 'Foydalanuvchi',
+      sortable: true,
+      render: (u) => (
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-500 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+            {u.firstName[0]}
+            {u.lastName[0]}
+          </div>
+          <div>
+            <p className="font-bold text-slate-900 dark:text-slate-100">
+              {u.firstName} {u.lastName}
+            </p>
+            <p className="text-[11px] text-slate-400 font-normal">{u.email}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'role',
+      header: 'Rol',
+      render: (u) => <Badge role={u.role as UserRole} />,
+    },
+    {
+      key: 'phone',
+      header: 'Telefon',
+      render: (u) => (
+        <span className="font-mono text-slate-600 dark:text-slate-400 text-xs">
+          {u.phone || '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Holati',
+      render: () => (
+        <Badge variant="success" dot size="sm">
+          Faol
+        </Badge>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Amallar',
+      className: 'text-right',
+      render: (u) => (
+        <button
+          onClick={() => handleDeleteUser(u.id, `${u.firstName} ${u.lastName}`)}
+          className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
+          title="O‘chirish"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      ),
+    },
+  ];
+
+  const roleSelectOptions = [
+    { value: 'ALL', label: 'Barcha Rollar' },
+    ...Object.values(UserRole).map((r) => ({
+      value: r,
+      label: ROLE_LABELS[r],
+    })),
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Page Title & Add Button */}
+    <PageTransition className="space-y-6 text-left">
+      {/* Title */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
             Foydalanuvchilar Boshqaruvi
           </h2>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Platformadagi barcha 5 ta roldagi foydalanuvchilar hisoblari va ruxsatnomalari
           </p>
         </div>
@@ -180,21 +255,26 @@ export const UsersPage: React.FC = () => {
               placeholder="Ism, familiya yoki email orqali qidirish..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950 focus:border-indigo-500"
             />
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
             <Filter className="w-4 h-4 text-slate-400 shrink-0" />
-            <span className="text-xs text-slate-500 font-medium shrink-0">Rol:</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium shrink-0">
+              Rol:
+            </span>
             {['ALL', ...Object.values(UserRole)].map((r) => (
               <button
                 key={r}
-                onClick={() => setRoleFilter(r)}
+                onClick={() => {
+                  setRoleFilter(r);
+                  setCurrentPage(1);
+                }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   roleFilter === r
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
                 {r === 'ALL' ? 'Barchasi' : ROLE_LABELS[r as UserRole]}
@@ -204,65 +284,24 @@ export const UsersPage: React.FC = () => {
         </div>
       </Card>
 
-      {/* Users Table */}
-      <Card className="p-0 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase font-semibold">
-                <th className="py-3 px-4">Foydalanuvchi</th>
-                <th className="py-3 px-4">Email</th>
-                <th className="py-3 px-4">Rol</th>
-                <th className="py-3 px-4">Telefon</th>
-                <th className="py-3 px-4">Holat</th>
-                <th className="py-3 px-4 text-right">Amallar</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
-              {filteredUsers.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">
-                    Mos keluvchi foydalanuvchilar topilmadi
-                  </td>
-                </tr>
-              ) : (
-                filteredUsers.map((u) => (
-                  <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-3.5 px-4 font-semibold text-slate-900 flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs shrink-0">
-                        {u.firstName[0]}
-                        {u.lastName[0]}
-                      </div>
-                      <span>
-                        {u.firstName} {u.lastName}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-600">{u.email}</td>
-                    <td className="py-3.5 px-4">
-                      <Badge role={u.role} />
-                    </td>
-                    <td className="py-3.5 px-4 font-mono text-slate-500">{u.phone || '—'}</td>
-                    <td className="py-3.5 px-4">
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                        Faol
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <button
-                        onClick={() => handleDeleteUser(u.id, `${u.firstName} ${u.lastName}`)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                        title="O‘chirish"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      {/* Design System Table */}
+      <div>
+        <Table
+          columns={columns}
+          data={paginatedUsers as unknown as (UserSummary & Record<string, unknown>)[]}
+          keyExtractor={(u) => u.id}
+          emptyText="Mos keluvchi foydalanuvchilar topilmadi"
+        />
+
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(filteredUsers.length / pageSize) || 1}
+          totalItems={filteredUsers.length}
+          pageSize={pageSize}
+          onPageChange={(page) => setCurrentPage(page)}
+          className="mt-3"
+        />
+      </div>
 
       {/* Add User Modal */}
       <Modal
@@ -273,86 +312,56 @@ export const UsersPage: React.FC = () => {
       >
         <form onSubmit={handleCreateUser} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Ism</label>
-              <input
-                type="text"
-                placeholder="Jasur"
-                value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                className="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Familiya</label>
-              <input
-                type="text"
-                placeholder="Yusupov"
-                value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                className="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Elektron Pochta
-            </label>
-            <input
-              type="email"
-              placeholder="jasur@ems.local"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
+            <Input
+              label="Ism"
+              placeholder="Jasur"
+              value={formData.firstName}
+              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+              required
+            />
+            <Input
+              label="Familiya"
+              placeholder="Yusupov"
+              value={formData.lastName}
+              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
               required
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Dastlabki Parol
-            </label>
-            <input
-              type="password"
-              placeholder="Kamida 6 ta belgi"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
-              required
-            />
-          </div>
+          <Input
+            label="Elektron Pochta"
+            type="email"
+            placeholder="jasur@ems.local"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            required
+          />
+
+          <Input
+            label="Dastlabki Parol"
+            type="password"
+            placeholder="Kamida 6 ta belgi"
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            required
+          />
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Rol</label>
-              <select
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-                className="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 bg-white"
-              >
-                {Object.values(UserRole).map((r) => (
-                  <option key={r} value={r}>
-                    {ROLE_LABELS[r]}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Telefon</label>
-              <input
-                type="text"
-                placeholder="+998901234567"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
-              />
-            </div>
+            <Select
+              label="Rol"
+              options={roleSelectOptions.filter((o) => o.value !== 'ALL')}
+              value={formData.role}
+              onChange={(val) => setFormData({ ...formData, role: val as UserRole })}
+            />
+            <Input
+              label="Telefon"
+              placeholder="+998901234567"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            />
           </div>
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
             <Button type="button" variant="outline" size="sm" onClick={() => setIsModalOpen(false)}>
               Bekor qilish
             </Button>
@@ -362,6 +371,6 @@ export const UsersPage: React.FC = () => {
           </div>
         </form>
       </Modal>
-    </div>
+    </PageTransition>
   );
 };

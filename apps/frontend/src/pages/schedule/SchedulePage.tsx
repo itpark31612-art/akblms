@@ -1,9 +1,14 @@
 import React from 'react';
-import { Card } from '../../components/common/Card';
-import { Button } from '../../components/common/Button';
+import { Card } from '../../design-system/components/Card';
+import { Button } from '../../design-system/components/Button';
+import { useToast } from '../../design-system/components/Toast';
+import { PageTransition } from '../../design-system/motion/PageTransition';
+import { StaggerContainer, StaggerItem } from '../../design-system/motion/StaggerAnimation';
 import { Clock, MapPin, User, Download, Calendar } from 'lucide-react';
 
 export const SchedulePage: React.FC = () => {
+  const toast = useToast();
+
   const days = [
     {
       name: 'Dushanba',
@@ -59,13 +64,13 @@ export const SchedulePage: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <PageTransition className="space-y-6 text-left">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
             Haftalik Dars Jadvali
           </h2>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             2026 Bahorgi semestr darslari va auditoriyalar taqsimoti
           </p>
         </div>
@@ -73,43 +78,49 @@ export const SchedulePage: React.FC = () => {
           variant="outline"
           size="sm"
           icon={<Download className="w-4 h-4" />}
-          onClick={() => alert('Dars jadvali PDF shaklida yuklab olindi')}
+          onClick={() => toast.success('Yuklab olindi', 'Dars jadvali PDF formatida saqlandi')}
         >
           PDF Yuklab Olish
         </Button>
       </div>
 
-      <div className="space-y-4">
+      <StaggerContainer className="space-y-4">
         {days.map((day) => (
-          <Card key={day.name}>
-            <div className="flex items-center gap-2 pb-3 mb-4 border-b border-slate-100">
-              <Calendar className="w-4 h-4 text-indigo-600" />
-              <h3 className="text-base font-bold text-slate-900">{day.name}</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {day.classes.map((cls, idx) => (
-                <div
-                  key={idx}
-                  className="p-4 rounded-xl bg-slate-50 border border-slate-200/70 hover:border-indigo-200 transition-colors"
-                >
-                  <div className="flex items-center justify-between text-xs font-semibold text-indigo-600 mb-1">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" /> {cls.time}
-                    </span>
-                    <span className="flex items-center gap-1 text-slate-500">
-                      <MapPin className="w-3.5 h-3.5" /> {cls.room}
-                    </span>
+          <StaggerItem key={day.name}>
+            <Card>
+              <div className="flex items-center gap-2 pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
+                <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  {day.name}
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {day.classes.map((cls, idx) => (
+                  <div
+                    key={idx}
+                    className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors"
+                  >
+                    <div className="flex items-center justify-between text-xs font-bold text-indigo-600 dark:text-indigo-400 mb-1">
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5" /> {cls.time}
+                      </span>
+                      <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400 font-medium">
+                        <MapPin className="w-3.5 h-3.5" /> {cls.room}
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-2">
+                      {cls.subject}
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5 font-medium">
+                      <User className="w-3 h-3 text-slate-400" /> {cls.teacher}
+                    </p>
                   </div>
-                  <h4 className="text-sm font-bold text-slate-900 mt-2">{cls.subject}</h4>
-                  <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                    <User className="w-3 h-3 text-slate-400" /> {cls.teacher}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </Card>
+                ))}
+              </div>
+            </Card>
+          </StaggerItem>
         ))}
-      </div>
-    </div>
+      </StaggerContainer>
+    </PageTransition>
   );
 };
