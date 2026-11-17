@@ -2,9 +2,11 @@ import { apiClient } from './client';
 import {
   ApiResponse,
   ICreateUserDto,
+  IUpdateUserDto,
   IUserFilterQuery,
   PaginatedResult,
   UserSummary,
+  UpdateUserStatusInput,
 } from '@ems/shared';
 
 export const usersApi = {
@@ -31,6 +33,22 @@ export const usersApi = {
     const res = await apiClient.post<ApiResponse<UserSummary>>('/users', data);
     if (!res.data.data) {
       throw new Error(res.data.error?.message || 'Foydalanuvchi yaratilmadi');
+    }
+    return res.data.data;
+  },
+
+  updateUser: async (id: string, data: IUpdateUserDto): Promise<UserSummary> => {
+    const res = await apiClient.put<ApiResponse<UserSummary>>(`/users/${id}`, data);
+    if (!res.data.data) {
+      throw new Error(res.data.error?.message || 'Foydalanuvchini yangilab bo‘lmadi');
+    }
+    return res.data.data;
+  },
+
+  updateStatus: async (id: string, data: UpdateUserStatusInput): Promise<UserSummary> => {
+    const res = await apiClient.patch<ApiResponse<UserSummary>>(`/users/${id}/status`, data);
+    if (!res.data.data) {
+      throw new Error(res.data.error?.message || 'Foydalanuvchi holatini o‘zgartirib bo‘lmadi');
     }
     return res.data.data;
   },

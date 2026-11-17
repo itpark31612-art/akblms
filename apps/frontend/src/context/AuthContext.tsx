@@ -1,21 +1,35 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserRole, UserSummary, LoginInput } from '@ems/shared';
+import {
+  UserRole,
+  UserSummary,
+  LoginInput,
+  ROLE_PERMISSIONS,
+  hasRolePermission,
+  UpdateProfileInput,
+  ChangePasswordInput,
+} from '@ems/shared';
 import { authApi } from '../api/auth.api';
 
 interface AuthContextType {
   user: UserSummary | null;
   role: UserRole | null;
+  permissions: string[];
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: LoginInput) => Promise<void>;
   logout: () => Promise<void>;
   quickLoginAs: (role: UserRole) => Promise<void>;
   switchRole: (role: UserRole) => void;
+  forgotPassword: (email: string) => Promise<{ message: string; resetToken?: string }>;
+  resetPassword: (token: string, newPassword: string) => Promise<void>;
+  changePassword: (data: ChangePasswordInput) => Promise<void>;
+  updateProfile: (data: UpdateProfileInput) => Promise<void>;
+  hasPermission: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Standart demo hisob ma'lumotlari
+// Standart demo hisob ma'lumotlari (PostgreSQL seed bilan 100% mos)
 export const DEMO_CREDENTIALS: Record<UserRole, { email: string; pass: string; name: string }> = {
   [UserRole.SUPER_ADMIN]: {
     email: 'superadmin@ems.local',
@@ -56,8 +70,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (token && storedUser) {
         try {
-          setUser(JSON.parse(storedUser));
-          // Orqa fonda profilni tekshirish
+          const parsed = JSON.parse(storedUser);
+          setUser(parsed);
+          // Orqa fonda profilni serverdan tekshirish
           authApi
             .getMe()
             .then((freshUser) => {
@@ -65,7 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               localStorage.setItem('user', JSON.stringify(freshUser));
             })
             .catch(() => {
-              // Agar token yaroqsiz bo'lsa, client interceptor hal qiladi
+              // Token eskirgan bo'lsa yoki server javob bermasa
             });
         } catch {
           localStorage.removeItem('user');
@@ -85,15 +100,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('refreshToken', response.tokens.refreshToken);
       localStorage.setItem('user', JSON.stringify(response.user));
       setUser(response.user);
-    } catch (err) {
-      // Agar backend server offline bo'lsa ham foydalanuvchiga mock demo kirish imkonini taqdim etish:
-      console.warn('Backendga ulanib bo‘lmadi, lokal demo profil faollashtirilmoqda:', err);
-      // Agar email demo lardan biriga to'g'ri kelsa:
+    } catch (err: unknown) {
+      // Backend offline bo'lsa yoki demo rejimda lokal fallback
       const matchedRole = (Object.keys(DEMO_CREDENTIALS) as UserRole[]).find(
         (r) => DEMO_CREDENTIALS[r].email.toLowerCase() === credentials.email.toLowerCase()
       );
 
-      if (matchedRole) {
+      // Agar server xatoligi bo'lsa va demo hisob bo'lsa
+      if (
+        matchedRole &&
+        err instanceof Error &&
+        (err.message.includes('Network Error') || err.message.includes('ECONNREFUSED'))
+      ) {
         const mockUser: UserSummary = {
           id: `demo-${matchedRole.toLowerCase()}-id`,
           email: credentials.email,
@@ -102,6 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: matchedRole,
           isActive: true,
           phone: '+998901234567',
+          permissions: ROLE_PERMISSIONS[matchedRole] || [],
           createdAt: new Date().toISOString(),
         };
         localStorage.setItem('accessToken', 'mock-access-token-' + matchedRole);
@@ -120,7 +139,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await login({ email: creds.email, password: creds.pass });
     } catch {
-      // Agar backend javob bermasa lokal demo profil
       const mockUser: UserSummary = {
         id: `demo-${targetRole.toLowerCase()}-id`,
         email: creds.email,
@@ -129,6 +147,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: targetRole,
         isActive: true,
         phone: '+998901234567',
+        permissions: ROLE_PERMISSIONS[targetRole] || [],
         createdAt: new Date().toISOString(),
       };
       localStorage.setItem('accessToken', 'mock-access-token-' + targetRole);
@@ -142,6 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updatedUser: UserSummary = {
       ...user,
       role: newRole,
+      permissions: ROLE_PERMISSIONS[newRole] || [],
     };
     setUser(updatedUser);
     localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -162,17 +182,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const forgotPassword = async (email: string) => {
+    return authApi.forgotPassword({ email });
+  };
+
+  const resetPassword = async (token: string, newPassword: string) => {
+    await authApi.resetPassword({ token, newPassword });
+  };
+
+  const changePassword = async (data: ChangePasswordInput) => {
+    await authApi.changePassword(data);
+  };
+
+  const updateProfile = async (data: UpdateProfileInput) => {
+    const fresh = await authApi.updateProfile(data);
+    setUser(fresh);
+    localStorage.setItem('user', JSON.stringify(fresh));
+  };
+
+  const hasPermission = (permission: string): boolean => {
+    if (!user) return false;
+    if (user.role === UserRole.SUPER_ADMIN) return true;
+    if (
+      user.permissions &&
+      (user.permissions.includes('*') || user.permissions.includes(permission))
+    ) {
+      return true;
+    }
+    return hasRolePermission(user.role, permission);
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user,
         role: user?.role || null,
+        permissions: user?.permissions || (user?.role ? ROLE_PERMISSIONS[user.role] : []),
         isAuthenticated: !!user,
         isLoading,
         login,
         logout,
         quickLoginAs,
         switchRole,
+        forgotPassword,
+        resetPassword,
+        changePassword,
+        updateProfile,
+        hasPermission,
       }}
     >
       {children}

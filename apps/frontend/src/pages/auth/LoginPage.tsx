@@ -1,21 +1,40 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth, DEMO_CREDENTIALS } from '../../context/AuthContext';
 import { useToast } from '../../design-system/components/Toast';
 import { UserRole, ROLE_LABELS } from '@ems/shared';
 import { Button } from '../../design-system/components/Button';
 import { Input } from '../../design-system/components/Input';
-import { GraduationCap, Mail, Lock, Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Modal } from '../../design-system/components/Modal';
+import {
+  GraduationCap,
+  Mail,
+  Lock,
+  Sparkles,
+  ArrowRight,
+  ShieldCheck,
+  KeyRound,
+  CheckCircle2,
+  AlertTriangle,
+} from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
-  const { login, quickLoginAs, isLoading } = useAuth();
+  const { login, quickLoginAs, forgotPassword, resetPassword, isLoading } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // Forgot / Reset Password Modal State
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [resetStep, setResetStep] = useState<'request' | 'submit'>('request');
+  const [isResetLoading, setIsResetLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +67,59 @@ export const LoginPage: React.FC = () => {
       navigate('/dashboard');
     } catch {
       setError('Tezkor kirishda xatolik yuz berdi');
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail) {
+      toast.error('Xatolik', 'Elektron pochta manzilini kiriting');
+      return;
+    }
+
+    setIsResetLoading(true);
+    try {
+      const res = await forgotPassword(resetEmail);
+      if (res.resetToken) {
+        setResetToken(res.resetToken);
+      }
+      setResetStep('submit');
+      toast.success('Kod yuborildi', res.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Tiklash so‘rovida xatolik';
+      toast.error('Xatolik', msg);
+    } finally {
+      setIsResetLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetToken || !newPassword) {
+      toast.error('Xatolik', 'Barcha maydonlarni to‘ldiring');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error('Xatolik', 'Parol kamida 6 belgidan iborat bo‘lishi kerak');
+      return;
+    }
+
+    setIsResetLoading(true);
+    try {
+      await resetPassword(resetToken, newPassword);
+      toast.success('Parol tiklandi!', 'Endi yangi parol bilan tizimga kirishingiz mumkin');
+      setPassword(newPassword);
+      setEmail(resetEmail);
+      setIsResetModalOpen(false);
+      setResetStep('request');
+      setResetToken('');
+      setNewPassword('');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Parolni yangilashda xatolik';
+      toast.error('Xatolik', msg);
+    } finally {
+      setIsResetLoading(false);
     }
   };
 
@@ -127,21 +199,25 @@ export const LoginPage: React.FC = () => {
               </p>
             </div>
 
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-6 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-medium"
-              >
-                {error}
-              </motion.div>
-            )}
+            <AnimatePresence mode="wait">
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  className="mb-6 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-medium flex items-start gap-2.5"
+                >
+                  <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input
                 label="Elektron pochta"
                 type="email"
-                placeholder="masalan: superadmin@ems.local"
+                placeholder="masalan: admin@ems.local"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 leftIcon={<Mail className="w-4 h-4" />}
@@ -169,9 +245,10 @@ export const LoginPage: React.FC = () => {
                 </label>
                 <button
                   type="button"
-                  onClick={() =>
-                    toast.info('Parol', 'Parolni tiklash uchun administrator bilan bog‘laning')
-                  }
+                  onClick={() => {
+                    setResetEmail(email);
+                    setIsResetModalOpen(true);
+                  }}
                   className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold cursor-pointer"
                 >
                   Parolni unutdingizmi?
@@ -198,6 +275,89 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Forgot / Reset Password Modal */}
+      <Modal
+        isOpen={isResetModalOpen}
+        onClose={() => {
+          setIsResetModalOpen(false);
+          setResetStep('request');
+        }}
+        title="Parolni qayta tiklash"
+        maxWidth="md"
+      >
+        {resetStep === 'request' ? (
+          <form onSubmit={handleForgotPassword} className="space-y-4 text-left">
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              Ro‘yxatdan o‘tgan elektron pochta manzilingizni kiriting. Tizim sizga parolni tiklash
+              uchun xavfsiz tasdiqlash kodini taqdim etadi.
+            </p>
+
+            <Input
+              label="Elektron pochta"
+              type="email"
+              placeholder="masalan: admin@ems.local"
+              value={resetEmail}
+              onChange={(e) => setResetEmail(e.target.value)}
+              leftIcon={<Mail className="w-4 h-4" />}
+              required
+            />
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="ghost" onClick={() => setIsResetModalOpen(false)}>
+                Bekor qilish
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                isLoading={isResetLoading}
+                leftIcon={<KeyRound className="w-4 h-4" />}
+              >
+                Tiklash kodini olish
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleResetPassword} className="space-y-4 text-left">
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+              <span>Tiklash kodi taqdim etildi. Yangi parolni kiriting.</span>
+            </div>
+
+            <Input
+              label="Tiklash kodi"
+              placeholder="Tiklash tokeni"
+              value={resetToken}
+              onChange={(e) => setResetToken(e.target.value)}
+              required
+            />
+
+            <Input
+              label="Yangi parol"
+              type="password"
+              placeholder="Kamida 6 belgi"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              leftIcon={<Lock className="w-4 h-4" />}
+              required
+            />
+
+            <div className="flex justify-between items-center pt-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setResetStep('request')}
+              >
+                Orqaga
+              </Button>
+              <Button type="submit" variant="primary" isLoading={isResetLoading}>
+                Parolni yangilash
+              </Button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 };

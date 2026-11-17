@@ -8,8 +8,12 @@ import {
   PaginatedResult,
   UserSummary,
   UserRole,
+  UserStatus,
+  UpdateUserStatusInput,
+  ROLE_PERMISSIONS,
 } from '@ems/shared';
 import { Prisma } from '@prisma/client';
+import { logger } from '../../utils/logger';
 
 export class UserService {
   static async getUsers(query: IUserFilterQuery): Promise<PaginatedResult<UserSummary>> {
@@ -52,9 +56,11 @@ export class UserService {
       firstName: u.firstName,
       lastName: u.lastName,
       role: u.role as UserRole,
+      status: u.status as UserStatus,
       isActive: u.isActive,
       phone: u.phone,
       avatarUrl: u.avatarUrl,
+      permissions: ROLE_PERMISSIONS[u.role as UserRole] || [],
       createdAt: u.createdAt.toISOString(),
     }));
 
@@ -82,16 +88,18 @@ export class UserService {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role as UserRole,
+      status: user.status as UserStatus,
       isActive: user.isActive,
       phone: user.phone,
       avatarUrl: user.avatarUrl,
+      permissions: ROLE_PERMISSIONS[user.role as UserRole] || [],
       createdAt: user.createdAt.toISOString(),
     };
   }
 
   static async createUser(dto: ICreateUserDto): Promise<UserSummary> {
     const existing = await prisma.user.findUnique({
-      where: { email: dto.email.toLowerCase() },
+      where: { email: dto.email.toLowerCase().trim() },
     });
 
     if (existing) {
@@ -104,12 +112,13 @@ export class UserService {
 
     const user = await prisma.user.create({
       data: {
-        email: dto.email.toLowerCase(),
+        email: dto.email.toLowerCase().trim(),
         passwordHash,
-        firstName: dto.firstName,
-        lastName: dto.lastName,
+        firstName: dto.firstName.trim(),
+        lastName: dto.lastName.trim(),
         role: dto.role,
-        phone: dto.phone,
+        phone: dto.phone?.trim(),
+        status: 'ACTIVE',
         isActive: true,
       },
     });
@@ -120,9 +129,11 @@ export class UserService {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role as UserRole,
+      status: user.status as UserStatus,
       isActive: user.isActive,
       phone: user.phone,
       avatarUrl: user.avatarUrl,
+      permissions: ROLE_PERMISSIONS[user.role as UserRole] || [],
       createdAt: user.createdAt.toISOString(),
     };
   }
@@ -136,9 +147,9 @@ export class UserService {
     const updated = await prisma.user.update({
       where: { id },
       data: {
-        firstName: dto.firstName,
-        lastName: dto.lastName,
-        phone: dto.phone,
+        firstName: dto.firstName?.trim(),
+        lastName: dto.lastName?.trim(),
+        phone: dto.phone?.trim(),
         role: dto.role,
         isActive: dto.isActive,
       },
@@ -150,9 +161,67 @@ export class UserService {
       firstName: updated.firstName,
       lastName: updated.lastName,
       role: updated.role as UserRole,
+      status: updated.status as UserStatus,
       isActive: updated.isActive,
       phone: updated.phone,
       avatarUrl: updated.avatarUrl,
+      permissions: ROLE_PERMISSIONS[updated.role as UserRole] || [],
+      createdAt: updated.createdAt.toISOString(),
+    };
+  }
+
+  static async updateUserStatus(
+    id: string,
+    dto: UpdateUserStatusInput,
+    operatorId?: string
+  ): Promise<UserSummary> {
+    const existing = await prisma.user.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundError('Foydalanuvchi topilmadi');
+    }
+
+    const isActive = dto.status === 'ACTIVE';
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: {
+        status: dto.status,
+        isActive,
+        // Agar blokdan chiqarilsa login limitlarini ham tiklash
+        ...(isActive && { failedLoginAttempts: 0, lockedUntil: null }),
+      },
+    });
+
+    // Agar bloklansa yoki to'xtatilsa, uning barcha mavjud sessiyalarini darhol bekor qilish
+    if (!isActive) {
+      await prisma.refreshToken.updateMany({
+        where: { userId: id, revoked: false },
+        data: { revoked: true },
+      });
+    }
+
+    await prisma.auditLog
+      .create({
+        data: {
+          userId: operatorId,
+          action: 'USER_STATUS_CHANGE',
+          resource: 'USERS',
+          details: `Foydalanuvchi (${existing.email}) holati [${dto.status}] ga o‘zgartirildi. Sabab: ${dto.reason || 'Keltirilmagan'}`,
+        },
+      })
+      .catch((err) => logger.warn('Audit log xatosi:', err));
+
+    return {
+      id: updated.id,
+      email: updated.email,
+      firstName: updated.firstName,
+      lastName: updated.lastName,
+      role: updated.role as UserRole,
+      status: updated.status as UserStatus,
+      isActive: updated.isActive,
+      phone: updated.phone,
+      avatarUrl: updated.avatarUrl,
+      permissions: ROLE_PERMISSIONS[updated.role as UserRole] || [],
       createdAt: updated.createdAt.toISOString(),
     };
   }
@@ -163,7 +232,6 @@ export class UserService {
       throw new NotFoundError('Foydalanuvchi topilmadi');
     }
 
-    // Soft delete or hard delete
     await prisma.user.delete({
       where: { id },
     });

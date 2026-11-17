@@ -16,6 +16,7 @@ import { PaymentsPage } from './pages/payments/PaymentsPage';
 import { SettingsPage } from './pages/settings/SettingsPage';
 import { ForbiddenPage } from './pages/ForbiddenPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { UserRole } from '@ems/shared';
 
 export const App: React.FC = () => {
   return (
@@ -32,9 +33,27 @@ export const App: React.FC = () => {
                 <Route element={<AppLayout />}>
                   <Route path="/" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
-                  <Route path="/users" element={<UsersPage />} />
+
+                  {/* RBAC Himoyalangan Marshrutlar */}
+                  <Route
+                    element={
+                      <ProtectedRoute
+                        allowedRoles={[UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.TEACHER]}
+                      />
+                    }
+                  >
+                    <Route path="/users" element={<UsersPage />} />
+                  </Route>
+
+                  <Route
+                    element={
+                      <ProtectedRoute allowedRoles={[UserRole.SUPER_ADMIN, UserRole.ADMIN]} />
+                    }
+                  >
+                    <Route path="/analytics" element={<AnalyticsPage />} />
+                  </Route>
+
                   <Route path="/courses" element={<CoursesPage />} />
-                  <Route path="/analytics" element={<AnalyticsPage />} />
                   <Route path="/schedule" element={<SchedulePage />} />
                   <Route path="/grades" element={<GradesPage />} />
                   <Route path="/payments" element={<PaymentsPage />} />

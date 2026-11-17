@@ -1,4 +1,4 @@
-import { UserRole } from '../constants/roles';
+import { UserRole, UserStatus } from '../constants/roles';
 
 export interface UserSummary {
   id: string;
@@ -6,9 +6,11 @@ export interface UserSummary {
   firstName: string;
   lastName: string;
   role: UserRole;
+  status?: UserStatus;
   isActive: boolean;
   avatarUrl?: string | null;
   phone?: string | null;
+  permissions?: string[];
   createdAt: string;
 }
 
@@ -17,6 +19,7 @@ export interface TokenPayload {
   email: string;
   role: UserRole;
   sessionId?: string;
+  permissions?: string[];
 }
 
 export interface AuthTokens {

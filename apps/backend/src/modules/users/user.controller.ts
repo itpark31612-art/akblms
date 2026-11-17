@@ -39,6 +39,19 @@ export class UserController {
     }
   }
 
+  static async updateStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const user = await UserService.updateUserStatus(req.params.id, req.body, req.user?.userId);
+      ApiResponseHelper.success(
+        res,
+        user,
+        `Foydalanuvchi holati [${user.status}] ga o‘zgartirildi`
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async remove(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       await UserService.deleteUser(req.params.id);

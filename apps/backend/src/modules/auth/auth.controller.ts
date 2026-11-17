@@ -6,14 +6,17 @@ import { UnauthorizedError } from '../../errors/AppError';
 export class AuthController {
   static async login(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const result = await AuthService.login(req.body);
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.headers['user-agent'];
 
-      // Refresh tokenni secure cookie da saqlash (browser uchun)
+      const result = await AuthService.login(req.body, ipAddress, userAgent);
+
+      // Refresh tokenni secure HTTP-only cookie da saqlash
       res.cookie('refreshToken', result.tokens.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 kun
       });
 
       ApiResponseHelper.success(res, result, 'Tizimga muvaffaqiyatli kirildi');
@@ -46,7 +49,10 @@ export class AuthController {
         throw new UnauthorizedError('Refresh token taqdim etilmadi');
       }
 
-      const result = await AuthService.refresh(token);
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.headers['user-agent'];
+
+      const result = await AuthService.refresh(token, ipAddress, userAgent);
 
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
@@ -70,6 +76,54 @@ export class AuthController {
 
       res.clearCookie('refreshToken');
       ApiResponseHelper.success(res, null, 'Tizimdan muvaffaqiyatli chiqildi');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async forgotPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await AuthService.forgotPassword(req.body);
+      ApiResponseHelper.success(res, result, result.message);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await AuthService.resetPassword(req.body);
+      ApiResponseHelper.success(
+        res,
+        null,
+        'Parol muvaffaqiyatli yangilandi. Yangi parol bilan tizimga kiring.'
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async changePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError('Avtorizatsiya talab qilinadi');
+      }
+
+      await AuthService.changePassword(req.user.userId, req.body);
+      ApiResponseHelper.success(res, null, 'Parol muvaffaqiyatli o‘zgartirildi');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError('Avtorizatsiya talab qilinadi');
+      }
+
+      const updated = await AuthService.updateProfile(req.user.userId, req.body);
+      ApiResponseHelper.success(res, updated, 'Profil ma’lumotlari muvaffaqiyatli yangilandi');
     } catch (error) {
       next(error);
     }

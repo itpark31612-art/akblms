@@ -16,6 +16,12 @@ enum Role {
   PARENT
 }
 
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+  SUSPENDED
+}
+
 enum AttendanceStatus {
   PRESENT
   ABSENT
@@ -31,39 +37,60 @@ enum GradeType {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  firstName    String
-  lastName     String
-  role         Role     @default(STUDENT)
-  isActive     Boolean  @default(true)
-  phone        String?
-  avatarUrl    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  passwordHash        String
+  firstName           String
+  lastName            String
+  role                Role                 @default(STUDENT)
+  status              UserStatus           @default(ACTIVE)
+  isActive            Boolean              @default(true)
+  failedLoginAttempts Int                  @default(0)
+  lockedUntil         DateTime?
+  phone               String?
+  avatarUrl           String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 
   // Relations
-  refreshTokens     RefreshToken[]
-  coursesTeaching   Course[]          @relation("TeacherCourses")
-  enrollments       Enrollment[]      @relation("StudentEnrollments")
-  attendances       Attendance[]      @relation("StudentAttendances")
-  grades            Grade[]           @relation("StudentGrades")
-  auditLogs         AuditLog[]
-  parentRelations   ParentStudent[]   @relation("ParentRelation")
-  studentRelations  ParentStudent[]   @relation("StudentRelation")
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  coursesTeaching     Course[]             @relation("TeacherCourses")
+  enrollments         Enrollment[]         @relation("StudentEnrollments")
+  attendances         Attendance[]         @relation("StudentAttendances")
+  grades              Grade[]              @relation("StudentGrades")
+  auditLogs           AuditLog[]
+  parentRelations     ParentStudent[]      @relation("ParentRelation")
+  studentRelations    ParentStudent[]      @relation("StudentRelation")
 
   @@index([email])
   @@index([role])
+  @@index([status])
 }
 
 model RefreshToken {
+  id              String   @id @default(uuid())
+  token           String   @unique
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt       DateTime
+  revoked         Boolean  @default(false)
+  replacedByToken String?
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+}
+
+model PasswordResetToken {
   id        String   @id @default(uuid())
   token     String   @unique
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
-  revoked   Boolean  @default(false)
+  used      Boolean  @default(false)
   createdAt DateTime @default(now())
 
   @@index([token])
