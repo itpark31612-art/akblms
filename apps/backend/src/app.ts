@@ -11,6 +11,7 @@ import { authRoutes } from './modules/auth/auth.routes';
 import { userRoutes } from './modules/users/user.routes';
 import { analyticsRoutes } from './modules/analytics/analytics.routes';
 import { courseRoutes } from './modules/courses/course.routes';
+import { studentRoutes } from './modules/students/student.routes';
 import { ApiResponseHelper } from './utils/apiResponse';
 
 export const createApp = (): Application => {
@@ -51,6 +52,7 @@ export const createApp = (): Application => {
   app.use(`${env.API_PREFIX}/users`, userRoutes);
   app.use(`${env.API_PREFIX}/analytics`, analyticsRoutes);
   app.use(`${env.API_PREFIX}/courses`, courseRoutes);
+  app.use(`${env.API_PREFIX}/students`, studentRoutes);
 
   // Root welcome route
   app.get('/', (_req: Request, res: Response) => {

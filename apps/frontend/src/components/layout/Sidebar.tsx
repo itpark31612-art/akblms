@@ -51,6 +51,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobile = false, onCloseMobil
       roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.TEACHER],
     },
     {
+      name: 'O‘quvchilar',
+      href: '/students',
+      icon: <GraduationCap className="w-5 h-5" />,
+      roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.TEACHER],
+    },
+    {
       name: 'Kurslar & Fanlar',
       href: '/courses',
       icon: <BookOpen className="w-5 h-5" />,

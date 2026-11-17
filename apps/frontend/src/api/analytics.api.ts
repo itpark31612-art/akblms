@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { ApiResponse } from '@ems/shared';
+import { ApiResponse, IAdminDashboardResponse, PaymentMethodType } from '@ems/shared';
 
 export interface DashboardAnalyticsData {
   role: string;
@@ -32,12 +32,55 @@ export interface DashboardAnalyticsData {
   };
 }
 
+export interface QuickStudentDto {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+}
+
+export interface QuickPaymentDto {
+  studentId: string;
+  amount: number;
+  paymentMethod: PaymentMethodType;
+  description?: string;
+}
+
 export const analyticsApi = {
   getDashboard: async (): Promise<DashboardAnalyticsData> => {
     const res = await apiClient.get<ApiResponse<DashboardAnalyticsData>>('/analytics/dashboard');
     if (!res.data.data) {
       throw new Error(res.data.error?.message || 'Analitika ma’lumotlari topilmadi');
     }
+    return res.data.data;
+  },
+
+  getAdminDashboard: async (params?: {
+    period?: 'today' | 'week' | 'month' | 'year' | 'custom';
+    startDate?: string;
+    endDate?: string;
+  }): Promise<IAdminDashboardResponse> => {
+    const res = await apiClient.get<ApiResponse<IAdminDashboardResponse>>('/analytics/admin-dashboard', {
+      params,
+    });
+    if (!res.data.data) {
+      throw new Error(res.data.error?.message || 'Admin Dashboard ma’lumotlari topilmadi');
+    }
+    return res.data.data;
+  },
+
+  createQuickStudent: async (data: QuickStudentDto) => {
+    const res = await apiClient.post<ApiResponse<any>>('/analytics/quick-student', data);
+    return res.data.data;
+  },
+
+  recordQuickPayment: async (data: QuickPaymentDto) => {
+    const res = await apiClient.post<ApiResponse<any>>('/analytics/quick-payment', data);
+    return res.data.data;
+  },
+
+  markNotificationRead: async (id: string) => {
+    const res = await apiClient.patch<ApiResponse<any>>(`/analytics/notifications/${id}/read`);
     return res.data.data;
   },
 };

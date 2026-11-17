@@ -17,6 +17,7 @@ import {
   Download,
   TrendingUp,
 } from 'lucide-react';
+import { AdminDashboardView } from './AdminDashboardView';
 import {
   AreaChart,
   Area,
@@ -31,6 +32,7 @@ import {
 
 export const SuperAdminDashboardView: React.FC = () => {
   const toast = useToast();
+  const [activeTab, setActiveTab] = useState<'network' | 'adminView'>('adminView');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newSchoolName, setNewSchoolName] = useState('');
   const [schools, setSchools] = useState([
@@ -96,7 +98,35 @@ export const SuperAdminDashboardView: React.FC = () => {
 
   return (
     <PageTransition className="space-y-6">
-      {/* Top Banner & Quick Actions */}
+      {/* Tab Switcher */}
+      <div className="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+        <button
+          onClick={() => setActiveTab('adminView')}
+          className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${
+            activeTab === 'adminView'
+              ? 'bg-indigo-600 text-white shadow-md'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+          }`}
+        >
+          Maktab Admin Paneli (Admin Dashboard)
+        </button>
+        <button
+          onClick={() => setActiveTab('network')}
+          className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${
+            activeTab === 'network'
+              ? 'bg-indigo-600 text-white shadow-md'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+          }`}
+        >
+          Global Tarmoq & Server Monitoringi
+        </button>
+      </div>
+
+      {activeTab === 'adminView' ? (
+        <AdminDashboardView />
+      ) : (
+        <>
+          {/* Top Banner & Quick Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-left">
         <div>
           <h2 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
@@ -407,6 +437,8 @@ export const SuperAdminDashboardView: React.FC = () => {
           </div>
         </form>
       </Modal>
+        </>
+      )}
     </PageTransition>
   );
 };

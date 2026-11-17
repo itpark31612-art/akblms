@@ -20,6 +20,7 @@ enum UserStatus {
   ACTIVE
   BLOCKED
   SUSPENDED
+  ARCHIVED
 }
 
 enum AttendanceStatus {
@@ -49,6 +50,11 @@ model User {
   lockedUntil         DateTime?
   phone               String?
   avatarUrl           String?
+  studentCode         String?              @unique
+  birthDate           DateTime?
+  address             String?
+  classRoomId         String?
+  classRoom           ClassRoom?           @relation("ClassRoomStudents", fields: [classRoomId], references: [id], onDelete: SetNull)
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
 
@@ -62,6 +68,9 @@ model User {
   auditLogs           AuditLog[]
   parentRelations     ParentStudent[]      @relation("ParentRelation")
   studentRelations    ParentStudent[]      @relation("StudentRelation")
+  payments            Payment[]            @relation("StudentPayments")
+  schedulesTeaching   Schedule[]           @relation("TeacherSchedules")
+  notifications       Notification[]       @relation("UserNotifications")
 
   @@index([email])
   @@index([role])
@@ -122,6 +131,7 @@ model Course {
   enrollments Enrollment[]
   attendances Attendance[]
   grades      Grade[]
+  schedules   Schedule[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
@@ -134,9 +144,11 @@ model ClassRoom {
   gradeLevel   Int
   academicYear String
   schoolId     String?
-  school       School?  @relation(fields: [schoolId], references: [id], onDelete: SetNull)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  school       School?     @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+  schedules    Schedule[]
+  students     User[]      @relation("ClassRoomStudents")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 }
 
 model Enrollment {
@@ -214,5 +226,80 @@ model AuditLog {
 
   @@index([userId])
   @@index([action])
+  @@index([createdAt])
+}
+
+enum PaymentStatus {
+  PAID
+  PENDING
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentMethod {
+  PAYME
+  CLICK
+  UZUM
+  CASH
+  BANK_TRANSFER
+}
+
+model Payment {
+  id            String         @id @default(uuid())
+  studentId     String
+  student       User           @relation("StudentPayments", fields: [studentId], references: [id], onDelete: Cascade)
+  amount        Float
+  paidAmount    Float          @default(0)
+  status        PaymentStatus  @default(PENDING)
+  type          String         @default("TUITION") // TUITION, EXAM, BOOKS, OTHER
+  paymentMethod PaymentMethod?
+  invoiceNumber String         @unique
+  dueDate       DateTime
+  paidAt        DateTime?
+  description   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([studentId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([paidAt])
+}
+
+model Schedule {
+  id          String     @id @default(uuid())
+  courseId    String
+  course      Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacherId   String?
+  teacher     User?      @relation("TeacherSchedules", fields: [teacherId], references: [id], onDelete: SetNull)
+  classRoomId String?
+  classRoom   ClassRoom? @relation(fields: [classRoomId], references: [id], onDelete: SetNull)
+  dayOfWeek   Int        // 1 = Dushanba, ..., 7 = Yakshanba
+  startTime   String     // "09:00"
+  endTime     String     // "10:30"
+  roomNumber  String
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([courseId])
+  @@index([teacherId])
+  @@index([dayOfWeek])
+}
+
+model Notification {
+  id          String    @id @default(uuid())
+  title       String
+  message     String
+  type        String    @default("INFO") // INFO, WARNING, SUCCESS, URGENT
+  targetRole  Role?
+  userId      String?
+  user        User?     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  isRead      Boolean   @default(false)
+  link        String?
+  createdAt   DateTime  @default(now())
+
+  @@index([targetRole])
+  @@index([userId])
   @@index([createdAt])
 }

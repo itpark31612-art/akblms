@@ -10,6 +10,7 @@ export enum UserStatus {
   ACTIVE = 'ACTIVE',
   BLOCKED = 'BLOCKED',
   SUSPENDED = 'SUSPENDED',
+  ARCHIVED = 'ARCHIVED',
 }
 
 export const USER_ROLES = Object.values(UserRole);

@@ -8,6 +8,8 @@ import { AppLayout } from './components/layout/AppLayout';
 import { LoginPage } from './pages/auth/LoginPage';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { UsersPage } from './pages/users/UsersPage';
+import { StudentsPage } from './pages/students/StudentsPage';
+import { StudentProfilePage } from './pages/students/StudentProfilePage';
 import { CoursesPage } from './pages/courses/CoursesPage';
 import { AnalyticsPage } from './pages/analytics/AnalyticsPage';
 import { SchedulePage } from './pages/schedule/SchedulePage';
@@ -43,6 +45,8 @@ export const App: React.FC = () => {
                     }
                   >
                     <Route path="/users" element={<UsersPage />} />
+                    <Route path="/students" element={<StudentsPage />} />
+                    <Route path="/students/:id" element={<StudentProfilePage />} />
                   </Route>
 
                   <Route
